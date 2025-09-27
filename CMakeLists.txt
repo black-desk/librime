@@ -2,7 +2,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_over
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
 cmake_minimum_required(VERSION 3.12)
-project(rime VERSION 1.14.0)
+project(rime
+  VERSION 1.14.0
+  DESCRIPTION "Rime Input Method Engine, the core library"
+  HOMEPAGE_URL "https://rime.im/"
+  LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 set(rime_version ${PROJECT_VERSION})
