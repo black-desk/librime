@@ -30,10 +30,6 @@ option(ENABLE_TIMESTAMP "Embed timestamp to schema artifacts" ON)
 set(RIME_DATA_DIR "rime-data" CACHE STRING "Target directory for Rime data")
 set(RIME_PLUGINS_DIR "rime-plugins" CACHE STRING "Target directory for externally built Rime plugins")
 
-if(WIN32)
-  set(ext ".exe")
-endif(WIN32)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}")
 
