@@ -44,7 +44,15 @@ if(ENABLE_EXTERNAL_PLUGINS)
 endif()
 
 set(rime_core_deps
-    ${Boost_LIBRARIES}
+    Boost::container
+    Boost::signals2
+    Boost::unordered
+    Boost::algorithm
+    Boost::crc
+    Boost::interprocess
+    Boost::scope_exit
+    Boost::uuid
+    ${Boost_LIBRARY}
     ${Glog_LIBRARY}
     ${YamlCpp_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}

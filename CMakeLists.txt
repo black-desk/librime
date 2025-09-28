@@ -30,6 +30,21 @@ option(INSTALL_PRIVATE_HEADERS "Install private headers (usually needed for exte
 option(ENABLE_EXTERNAL_PLUGINS "Enable loading of externally built Rime plugins (from directory set by RIME_PLUGINS_DIR variable)" OFF)
 option(ENABLE_THREADING "Enable threading for deployer" ON)
 option(ENABLE_TIMESTAMP "Embed timestamp to schema artifacts" ON)
+option(FETCH_DEPS "Fetch dependencies with FetchContent" OFF)
+
+if (FETCH_DEPS)
+  include(FetchContent)
+  cmake_minimum_required(VERSION 3.24)
+
+  FetchContent_Declare(
+    Boost
+    URL https://github.com/boostorg/boost/releases/download/boost-1.89.0/boost-1.89.0-cmake.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    OVERRIDE_FIND_PACKAGE
+    EXCLUDE_FROM_ALL
+  )
+  FetchContent_MakeAvailable(Boost)
+endif()
 
 set(RIME_DATA_DIR "rime-data" CACHE STRING "Target directory for Rime data")
 set(RIME_PLUGINS_DIR "rime-plugins" CACHE STRING "Target directory for externally built Rime plugins")
@@ -59,11 +74,7 @@ if(MSVC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-if(LINUX)
-  find_package(Boost 1.74.0 REQUIRED COMPONENTS regex)
-else()
-  find_package(Boost 1.77.0)
-endif()
+find_package(Boost 1.77.0 REQUIRED)
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
