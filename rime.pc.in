@@ -9,4 +9,4 @@ Name: Rime
 Description: Rime Input Method Engine
 Version: @rime_version@
 Cflags: -I${includedir}
-Libs: -L${libdir} -lrime
+Libs: -L${libdir} -Wl,--whole-archive -lrime -Wl,--no-whole-archive
