@@ -1,0 +1,322 @@
+From 4f64fb117dc1a03ddd0d5fbd3b8e63d7e1122bd1 Mon Sep 17 00:00:00 2001
+From: Chen Linxuan <me@black-desk.cn>
+Date: Sun, 26 Apr 2026 13:42:03 +0800
+Subject: [PATCH 1/2] Replace CMAKE_SOURCE_DIR with PROJECT_SOURCE_DIR for
+ FetchContent
+
+CMAKE_SOURCE_DIR always points to the top-level project root, which is
+wrong when OpenCC is included via FetchContent or add_subdirectory.
+PROJECT_SOURCE_DIR correctly resolves to OpenCC's own source tree
+regardless of how it is pulled in.
+
+Assisted-by: Claude:glm-5.1
+---
+ CMakeLists.txt                                     |  8 ++++----
+ cmake/GitVersion.cmake                             |  6 +++---
+ doc/CMakeLists.txt                                 |  4 ++--
+ plugins/jieba/tests/JiebaPluginIntegrationTest.cpp |  8 ++++----
+ src/ConfigTestBase.hpp                             |  6 +++---
+ src/benchmark/Performance.cpp                      | 10 +++++-----
+ test/CommandLineConvertTest.cpp                    |  6 +++---
+ 7 files changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9b661b347..c1d4dbf3b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,7 +44,7 @@ set (PACKAGE_URL https://github.com/BYVoid/OpenCC)
+ set (PACKAGE_BUGREPORT https://github.com/BYVoid/OpenCC/issues)
+ 
+ # Derive version from Git tags (falls back to hardcoded default when Git is unavailable)
+-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
++list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+ include(GitVersion)
+ 
+ set(CPACK_SOURCE_PACKAGE_FILE_NAME
+@@ -223,14 +223,14 @@ endif (NOT BUILD_SHARED_LIBS)
+ if (ENABLE_GTEST)
+   add_definitions(
+     -DPROJECT_BINARY_DIR="${PROJECT_BINARY_DIR}"
+-    -DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
++    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+   )
+ endif()
+ 
+ if (ENABLE_BENCHMARK)
+   add_definitions(
+     -DPROJECT_BINARY_DIR="${PROJECT_BINARY_DIR}"
+-    -DCMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
++    -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+   )
+ endif()
+ 
+@@ -269,7 +269,7 @@ add_subdirectory(test)
+ 
+ if (ENABLE_BENCHMARK AND TARGET performance AND TARGET opencc_jieba)
+   target_compile_definitions(performance PRIVATE
+-    OPENCC_BENCHMARK_JIEBA_CONFIG_DIR="${CMAKE_SOURCE_DIR}/plugins/jieba/data/config"
++    OPENCC_BENCHMARK_JIEBA_CONFIG_DIR="${PROJECT_SOURCE_DIR}/plugins/jieba/data/config"
+     OPENCC_BENCHMARK_JIEBA_PLUGIN_DIR="$<TARGET_FILE_DIR:opencc_jieba>"
+   )
+   add_dependencies(performance opencc_jieba)
+diff --git a/cmake/GitVersion.cmake b/cmake/GitVersion.cmake
+index f1e813657..a2ee2f2eb 100644
+--- a/cmake/GitVersion.cmake
++++ b/cmake/GitVersion.cmake
+@@ -24,7 +24,7 @@ if(GIT_FOUND)
+   # Try git describe --tags --long --always
+   execute_process(
+     COMMAND "${GIT_EXECUTABLE}" describe --tags --long --always
+-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+     OUTPUT_VARIABLE _git_raw
+     ERROR_QUIET
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+@@ -36,12 +36,12 @@ if(GIT_FOUND)
+     set(_dirty_suffix "")
+     execute_process(
+       COMMAND "${GIT_EXECUTABLE}" diff --quiet
+-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+       RESULT_VARIABLE _diff_result
+     )
+     execute_process(
+       COMMAND "${GIT_EXECUTABLE}" diff --cached --quiet
+-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+       RESULT_VARIABLE _diff_cached_result
+     )
+     if(NOT _diff_result EQUAL 0 OR NOT _diff_cached_result EQUAL 0)
+diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
+index c16e2892f..df0a67af3 100644
+--- a/doc/CMakeLists.txt
++++ b/doc/CMakeLists.txt
+@@ -27,7 +27,7 @@ if(BUILD_DOCUMENTATION)
+ 
+     install(
+     	DIRECTORY
+-    		${CMAKE_BINARY_DIR}/doc/html
++    		${PROJECT_BINARY_DIR}/doc/html
+     	DESTINATION
+     		${DIR_SHARE_OPENCC}/doc
+     )
+@@ -35,6 +35,6 @@ if(BUILD_DOCUMENTATION)
+     set_directory_properties(
+     	PROPERTIES
+     		ADDITIONAL_MAKE_CLEAN_FILES
+-    			"${CMAKE_BINARY_DIR}/doc/html"
++    			"${PROJECT_BINARY_DIR}/doc/html"
+     )
+ endif()
+diff --git a/plugins/jieba/tests/JiebaPluginIntegrationTest.cpp b/plugins/jieba/tests/JiebaPluginIntegrationTest.cpp
+index d768ee90b..19ab8be4c 100644
+--- a/plugins/jieba/tests/JiebaPluginIntegrationTest.cpp
++++ b/plugins/jieba/tests/JiebaPluginIntegrationTest.cpp
+@@ -206,10 +206,10 @@ class JiebaPluginIntegrationTest : public ::testing::Test {
+                                 ".json");
+ #else
+     if (config == "s2twp_jieba" || config == "tw2sp_jieba") {
+-      return std::string(CMAKE_SOURCE_DIR) + "/plugins/jieba/data/config/" +
++      return std::string(PROJECT_SOURCE_DIR) + "/plugins/jieba/data/config/" +
+              config + ".json";
+     }
+-    return std::string(CMAKE_SOURCE_DIR) + "/data/config/" + config + ".json";
++    return std::string(PROJECT_SOURCE_DIR) + "/data/config/" + config + ".json";
+ #endif
+   }
+ 
+@@ -290,7 +290,7 @@ class JiebaPluginIntegrationTest : public ::testing::Test {
+     return runfiles_->Rlocation(
+         "_main/plugins/jieba/deps/cppjieba/dict/hmm_model.utf8");
+ #else
+-    return std::string(CMAKE_SOURCE_DIR) +
++    return std::string(PROJECT_SOURCE_DIR) +
+            "/plugins/jieba/deps/cppjieba/dict/hmm_model.utf8";
+ #endif
+   }
+@@ -395,7 +395,7 @@ TEST_F(JiebaPluginIntegrationTest, ConvertFromJsonCases) {
+       runfiles_->Rlocation(
+           "_main/plugins/jieba/tests/data/jieba_comparison_testcases.json")
+ #else
+-      std::string(CMAKE_SOURCE_DIR) +
++      std::string(PROJECT_SOURCE_DIR) +
+       "/plugins/jieba/tests/data/jieba_comparison_testcases.json"
+ #endif
+   );
+diff --git a/src/ConfigTestBase.hpp b/src/ConfigTestBase.hpp
+index 2f5747912..e0ae10886 100644
+--- a/src/ConfigTestBase.hpp
++++ b/src/ConfigTestBase.hpp
+@@ -26,13 +26,13 @@
+ 
+ namespace opencc {
+ 
+-#ifdef CMAKE_SOURCE_DIR
++#ifdef PROJECT_SOURCE_DIR
+ class ConfigTestBase : public ::testing::Test {
+ protected:
+   ConfigTestBase()
+-      : CONFIG_TEST_JSON_PATH(CMAKE_SOURCE_DIR
++      : CONFIG_TEST_JSON_PATH(PROJECT_SOURCE_DIR
+                               "/test/config_test/config_test.json"),
+-        CONFIG_TEST_DIR_PATH(CMAKE_SOURCE_DIR "/test/config_test") {}
++        CONFIG_TEST_DIR_PATH(PROJECT_SOURCE_DIR "/test/config_test") {}
+ 
+   const std::string CONFIG_TEST_JSON_PATH;
+   const std::string CONFIG_TEST_DIR_PATH;
+diff --git a/src/benchmark/Performance.cpp b/src/benchmark/Performance.cpp
+index 44e04ac99..dfe11b955 100644
+--- a/src/benchmark/Performance.cpp
++++ b/src/benchmark/Performance.cpp
+@@ -151,14 +151,14 @@ std::string ResolveConfigPath(const std::string& config_name) {
+            ".json";
+   }
+ #endif
+-  return std::string(CMAKE_SOURCE_DIR) + "/data/config/" + config_name + ".json";
++  return std::string(PROJECT_SOURCE_DIR) + "/data/config/" + config_name + ".json";
+ }
+ 
+ std::string ResolveTextDictionaryPath(const std::string& dict_file_name) {
+   const std::string text_file_name =
+       ReplaceSuffix(dict_file_name, ".ocd2", ".txt");
+   const std::string source_path =
+-      std::string(CMAKE_SOURCE_DIR) + "/data/dictionary/" + text_file_name;
++      std::string(PROJECT_SOURCE_DIR) + "/data/dictionary/" + text_file_name;
+   if (IsRegularFile(source_path)) {
+     return source_path;
+   }
+@@ -193,7 +193,7 @@ std::string ResolveSegmentationResourcePath(
+       return plugin_parent_path;
+     }
+     const std::string source_jieba_path =
+-        std::string(CMAKE_SOURCE_DIR) + "/plugins/jieba/deps/cppjieba/dict/" +
++        std::string(PROJECT_SOURCE_DIR) + "/plugins/jieba/deps/cppjieba/dict/" +
+         basename;
+     if (IsRegularFile(source_jieba_path)) {
+       return source_jieba_path;
+@@ -462,7 +462,7 @@ std::string OpenccBinaryPath() {
+ }
+ 
+ std::string SourceConfigDirectory() {
+-  return std::string(CMAKE_SOURCE_DIR) + "/data/config";
++  return std::string(PROJECT_SOURCE_DIR) + "/data/config";
+ }
+ 
+ std::string BuildDataDirectory() {
+@@ -755,7 +755,7 @@ void SetCommandLineCounters(benchmark::State& state, size_t total_input_bytes,
+ }
+ 
+ std::string ReadText(const std::string& filename) {
+-  const std::string benchmark_data_dir = CMAKE_SOURCE_DIR "/test/benchmark/";
++  const std::string benchmark_data_dir = PROJECT_SOURCE_DIR "/test/benchmark/";
+   const std::string data_path = benchmark_data_dir + filename;
+   std::ifstream stream(data_path.c_str());
+   return std::string((std::istreambuf_iterator<char>(stream)),
+diff --git a/test/CommandLineConvertTest.cpp b/test/CommandLineConvertTest.cpp
+index cd5a14ac8..e920b6d15 100644
+--- a/test/CommandLineConvertTest.cpp
++++ b/test/CommandLineConvertTest.cpp
+@@ -47,7 +47,7 @@ class CommandLineConvertTest : public ::testing::Test {
+     runfiles_.reset(Runfiles::CreateForTest());
+ #else
+     ASSERT_NE("", PROJECT_BINARY_DIR);
+-    ASSERT_NE("", CMAKE_SOURCE_DIR);
++    ASSERT_NE("", PROJECT_SOURCE_DIR);
+     ASSERT_EQ(0, portable_chdir(PROJECT_BINARY_DIR "/data"));
+ #endif
+   }
+@@ -109,7 +109,7 @@ class CommandLineConvertTest : public ::testing::Test {
+ #ifdef BAZEL
+     return "";
+ #else
+-    return CMAKE_SOURCE_DIR "/data/config/";
++    return PROJECT_SOURCE_DIR "/data/config/";
+ #endif
+   }
+ 
+@@ -226,7 +226,7 @@ TEST_F(CommandLineConvertTest, ConvertFromJson) {
+   const std::string casesPath =
+       runfiles_->Rlocation("_main/test/testcases/testcases.json");
+ #else
+-  const std::string casesPath = CMAKE_SOURCE_DIR "/test/testcases/testcases.json";
++  const std::string casesPath = PROJECT_SOURCE_DIR "/test/testcases/testcases.json";
+ #endif
+   const CasesByConfig cases = LoadCases(casesPath);
+ 
+
+From ca47dbcc0a491a1a4d1f8bcad556354cc8c645be Mon Sep 17 00:00:00 2001
+From: Chen Linxuan <me@black-desk.cn>
+Date: Sun, 26 Apr 2026 13:42:43 +0800
+Subject: [PATCH 2/2] Set FetchContent-friendly option defaults via
+ PROJECT_IS_TOP_LEVEL
+
+When OpenCC is pulled in as a subproject (FetchContent /
+add_subdirectory), default to static linking and prefer system
+libraries for marisa, darts, rapidjson and tclap so the parent
+project is not forced to build our bundled dependencies.
+
+A CMake < 3.21 fallback computes PROJECT_IS_TOP_LEVEL from
+CMAKE_SOURCE_DIR / PROJECT_SOURCE_DIR comparison.
+
+Assisted-by: Claude:glm-5.1
+---
+ CMakeLists.txt | 37 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c1d4dbf3b..4d9bbb0cb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -24,20 +24,47 @@ include (CTest)
+ include(GNUInstallDirs)
+ 
+ ######## Options
++
++# PROJECT_IS_TOP_LEVEL is available since CMake 3.21; provide a fallback.
++if(CMAKE_VERSION VERSION_LESS 3.21)
++  if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
++    set(PROJECT_IS_TOP_LEVEL TRUE)
++  else()
++    set(PROJECT_IS_TOP_LEVEL FALSE)
++  endif()
++endif()
++
++# When used via FetchContent / add_subdirectory, prefer static linking and
++# system libraries so that the parent project is not forced to build our
++# bundled dependencies.
++if(PROJECT_IS_TOP_LEVEL)
++  set(_OPENCC_DEFAULT_BUILD_SHARED_LIBS ON)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_DARTS OFF)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_MARISA OFF)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_RAPIDJSON OFF)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_TCLAP OFF)
++else()
++  set(_OPENCC_DEFAULT_BUILD_SHARED_LIBS OFF)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_DARTS ON)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_MARISA ON)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_RAPIDJSON ON)
++  set(_OPENCC_DEFAULT_USE_SYSTEM_TCLAP ON)
++endif()
++
+ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
+-option(BUILD_SHARED_LIBS "Build opencc as shared library" ON)
++option(BUILD_SHARED_LIBS "Build opencc as shared library" ${_OPENCC_DEFAULT_BUILD_SHARED_LIBS})
+ option(ENABLE_GTEST "Build all tests." OFF)
+ option(ENABLE_BENCHMARK "Build benchmark tests." OFF)
+ option(ENABLE_DARTS "Build DartsDict (ocd format)." ON)
+ option(BUILD_OPENCC_JIEBA_PLUGIN "Build Jieba segmentation as a loadable plugin." OFF)
+ option(BUILD_PYTHON "Build python library" OFF)
+-option(USE_SYSTEM_DARTS "Use system version of Darts" OFF)
++option(USE_SYSTEM_DARTS "Use system version of Darts" ${_OPENCC_DEFAULT_USE_SYSTEM_DARTS})
+ option(USE_SYSTEM_GOOGLE_BENCHMARK "Use system version of Google Benchmark" OFF)
+ option(USE_SYSTEM_GTEST "Use system version of GoogleTest" OFF)
+-option(USE_SYSTEM_MARISA "Use system version of Marisa" OFF)
++option(USE_SYSTEM_MARISA "Use system version of Marisa" ${_OPENCC_DEFAULT_USE_SYSTEM_MARISA})
+ option(USE_SYSTEM_PYBIND11 "Use system version of pybind11" OFF)
+-option(USE_SYSTEM_RAPIDJSON "Use system version of RapidJSON" OFF)
+-option(USE_SYSTEM_TCLAP "Use system version of TCLAP" OFF)
++option(USE_SYSTEM_RAPIDJSON "Use system version of RapidJSON" ${_OPENCC_DEFAULT_USE_SYSTEM_RAPIDJSON})
++option(USE_SYSTEM_TCLAP "Use system version of TCLAP" ${_OPENCC_DEFAULT_USE_SYSTEM_TCLAP})
+ 
+ ######## Package information
+ set (PACKAGE_URL https://github.com/BYVoid/OpenCC)

@@ -1,23 +1,26 @@
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
-cmake_minimum_required(VERSION 3.12)
-project(rime)
+cmake_minimum_required(VERSION 3.24)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+project(rime VERSION 1.16.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
-
-set(rime_version 1.16.1)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(rime_soversion 1)
-
-add_definitions(-DRIME_VERSION="${rime_version}")
 
 # generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(FetchContent)
 
 option(BUILD_SHARED_LIBS "Build Rime as shared library" ON)
 option(BUILD_MERGED_PLUGINS "Merge plugins into one Rime library" ON)
 option(BUILD_STATIC "Build with dependencies as static libraries" OFF)
+option(USE_VENDORED_DEPS "Fetch and build dependencies from source" OFF)
 option(BUILD_DATA "Build data for Rime" OFF)
 option(BUILD_SAMPLE "Build sample Rime plugin" OFF)
 option(BUILD_TEST "Build and run tests" ON)
@@ -37,122 +40,116 @@ if(WIN32)
   set(ext ".exe")
 endif(WIN32)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}")
-
-if (ENABLE_ASAN)
-  set(asan_cflags "-fsanitize=address -fno-omit-frame-pointer")
-  set(asan_lflags "-fsanitize=address -lasan")
-  set(CMAKE_C_FLAGS "${asan_cflags} ${CMAKE_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${asan_cflags} ${CMAKE_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${asan_lflags} ${CMAKE_EXE_LINKER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${asan_lflags} ${CMAKE_SHARED_LINKER_FLAGS}")
-endif()
-
 set(Boost_USE_STATIC_LIBS ${BUILD_STATIC})
-set(Gflags_STATIC ${BUILD_STATIC})
-set(Glog_STATIC ${BUILD_STATIC})
-set(LevelDb_STATIC ${BUILD_STATIC})
-set(Marisa_STATIC ${BUILD_STATIC})
-set(Opencc_STATIC ${BUILD_STATIC})
-set(YamlCpp_STATIC ${BUILD_STATIC})
-
 set(Boost_USE_MULTITHREADED ON)
+if(BUILD_STATIC)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib)
+endif()
 if(MSVC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-if(LINUX)
-  find_package(Boost 1.74.0 REQUIRED COMPONENTS regex)
-else()
-  find_package(Boost 1.77.0)
-endif()
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
-  link_directories(${Boost_LIBRARY_DIRS})
-  add_definitions(-DBOOST_DLL_USE_STD_FS)
+find_package(Threads REQUIRED)
+
+if(USE_VENDORED_DEPS)
+  # Boost
+  set(BOOST_INCLUDE_LIBRARIES
+    algorithm crc dll interprocess range regex scope_exit signals2 unordered uuid
+    CACHE STRING "" FORCE)
+  FetchContent_Declare(Boost
+    URL https://github.com/boostorg/boost/releases/download/boost-1.91.0-1/boost-1.91.0-1-cmake.tar.gz
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(Boost)
+
+  # glog
+  FetchContent_Declare(glog
+    URL https://github.com/google/glog/archive/refs/tags/v0.7.1.tar.gz
+    OVERRIDE_FIND_PACKAGE
+  )
+  set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(glog)
+
+  # yaml-cpp
+  FetchContent_Declare(yaml-cpp
+    URL https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+    OVERRIDE_FIND_PACKAGE
+  )
+  set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+  set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(yaml-cpp)
+
+  # leveldb
+  FetchContent_Declare(leveldb
+    URL https://github.com/google/leveldb/archive/refs/tags/1.23.tar.gz
+    OVERRIDE_FIND_PACKAGE
+  )
+  set(LEVELDB_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+  set(LEVELDB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(leveldb)
+  if(NOT TARGET leveldb::leveldb)
+    add_library(leveldb::leveldb ALIAS leveldb)
+  endif()
+
+  # marisa-trie
+  FetchContent_Declare(Marisa
+    URL https://github.com/s-yata/marisa-trie/archive/refs/tags/v0.3.1.tar.gz
+    OVERRIDE_FIND_PACKAGE
+  )
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  set(ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(Marisa)
+
+  # OpenCC
+  FetchContent_Declare(OpenCC
+    # FIXME: URL https://github.com/BYVoid/OpenCC/archive/refs/tags/ver.1.3.0.tar.gz
+    URL https://github.com/BYVoid/OpenCC/archive/150feaac3f8fa4bfb3716e7d4d79380af948534b.zip
+    PATCH_COMMAND
+      patch -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/opencc-fetchcontent-fix.patch"
+    OVERRIDE_FIND_PACKAGE
+  )
+  set(LIBMARISA "marisa" CACHE FILEPATH "marisa library")
+  set(USE_SYSTEM_RAPIDJSON OFF CACHE BOOL "Use vendored rapidjson in opencc" FORCE)
+  set(USE_SYSTEM_DARTS OFF CACHE BOOL "Use vendored darts in opencc" FORCE)
+  set(USE_SYSTEM_TCLAP OFF CACHE BOOL "Use vendored tclap in opencc" FORCE)
+  FetchContent_MakeAvailable(OpenCC)
+
+  if(BUILD_TEST)
+    FetchContent_Declare(GTest
+      URL https://github.com/google/googletest/releases/download/v1.17.0/googletest-1.17.0.tar.gz
+      OVERRIDE_FIND_PACKAGE
+    )
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(GTest)
+  endif()
 endif()
 
 if(ENABLE_LOGGING)
-
-  find_package(Gflags)
-  if(Gflags_FOUND)
-    include_directories(${Gflags_INCLUDE_PATH})
-  endif()
-
-  find_package(Glog REQUIRED)
-  if(Glog_FOUND)
-    include_directories(${Glog_INCLUDE_PATH})
-    if(WIN32)
-      add_compile_definitions("GLOG_DEPRECATED=__declspec(deprecated)")
-      add_compile_definitions(GLOG_NO_ABBREVIATED_SEVERITIES)
-    else()
-      add_compile_definitions("GLOG_DEPRECATED=__attribute__((deprecated))")
-    endif()
-    if(Glog_STATIC)
-      add_compile_definitions(GLOG_EXPORT=)
-      add_compile_definitions(GLOG_NO_EXPORT=)
-    else()
-      add_compile_definitions("GLOG_EXPORT=__attribute__((visibility(\"default\")))")
-      add_compile_definitions("GLOG_NO_EXPORT=__attribute__((visibility(\"default\")))")
-    endif()
-  endif()
-
+  find_package(glog REQUIRED)
+  find_package(gflags)
   set(RIME_ENABLE_LOGGING 1)
-
-  if (ALSO_LOG_TO_STDERR)
-     set(RIME_ALSO_LOG_TO_STDERR 1)
+  if(ALSO_LOG_TO_STDERR)
+    set(RIME_ALSO_LOG_TO_STDERR 1)
   endif()
 endif()
 
-find_package(Threads)
-
-if(NOT ENABLE_THREADING)
-  add_definitions(-DRIME_NO_THREADING)
-endif()
-
-if(NOT ENABLE_TIMESTAMP)
-  add_definitions(-DRIME_NO_TIMESTAMP)
-endif()
+find_package(Boost REQUIRED COMPONENTS regex)
+find_package(yaml-cpp REQUIRED)
+find_package(leveldb REQUIRED)
+find_package(Marisa REQUIRED)
+find_package(OpenCC REQUIRED)
 
 if(BUILD_TEST)
   find_package(GTest REQUIRED)
-  if(GTEST_FOUND)
-    enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
-  endif()
-endif()
-
-find_package(YamlCpp REQUIRED)
-if(YamlCpp_FOUND)
-  include_directories(${YamlCpp_INCLUDE_PATH})
-endif()
-if(YamlCpp_STATIC)
-  add_definitions(-DYAML_CPP_STATIC_DEFINE)
-endif()
-
-find_package(LevelDb REQUIRED)
-if(LevelDb_FOUND)
-    include_directories(${LevelDb_INCLUDE_PATH})
-endif()
-
-find_package(Marisa REQUIRED)
-if(Marisa_FOUND)
-  include_directories(${Marisa_INCLUDE_PATH})
-endif()
-
-find_package(Opencc REQUIRED)
-if(Opencc_FOUND)
-include_directories(${Opencc_INCLUDE_PATH})
-endif()
-if(Opencc_STATIC)
-  add_definitions(-DOpencc_BUILT_AS_STATIC)
+  enable_testing()
 endif()
 
 find_path(X11Keysym X11/keysym.h)
 if(X11Keysym)
   message(STATUS "Found X11/keysym.h at ${X11Keysym}")
-  include_directories(${X11Keysym})
 else()
   message(WARNING "X11/keysym.h not found.")
 endif()
@@ -160,26 +157,6 @@ endif()
 configure_file(
   "${PROJECT_SOURCE_DIR}/src/rime/build_config.h.in"
   "${PROJECT_BINARY_DIR}/src/rime/build_config.h")
-
-include_directories(${PROJECT_BINARY_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/include)
-link_directories(${PROJECT_SOURCE_DIR}/lib)
-
-if(MSVC)
-  # https://stackoverflow.com/a/31264946
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-  add_definitions("/wd4244 /wd4996")
-
-  # large address aware
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
-endif()
-
-if(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-endif()
 
 if (NOT CMAKE_BUILD_PARALLEL_LEVEL)
   include(ProcessorCount)
@@ -223,9 +200,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD|OpenBSD|DragonFly|GNU|Darwin" OR 
     DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig)
 endif()
 
-install(FILES cmake/RimeConfig.cmake
-  DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/cmake/rime)
-
 file(GLOB rime_public_header_files ${PROJECT_SOURCE_DIR}/src/*.h)
 list(FILTER rime_public_header_files EXCLUDE REGEX .*_impl\.h$)
 install(FILES ${rime_public_header_files}
@@ -249,16 +223,11 @@ if(BUILD_DATA)
   install(FILES ${rime_preset_data_files} DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/${RIME_DATA_DIR})
 endif()
 
-if(BUILD_SHARED_LIBS)
-  add_definitions(-DRIME_BUILD_SHARED_LIBS)
-  set(rime_library rime)
-  if(BUILD_SEPARATE_LIBS)
-    set(rime_dict_library rime-dict)
-    set(rime_gears_library rime-gears)
-    set(rime_levers_library rime-levers)
-  endif()
-else()
-  set(rime_library rime-static)
+set(rime_library rime)
+if(BUILD_SHARED_LIBS AND BUILD_SEPARATE_LIBS)
+  set(rime_dict_library rime-dict)
+  set(rime_gears_library rime-gears)
+  set(rime_levers_library rime-levers)
 endif()
 
 add_subdirectory(plugins)
@@ -278,11 +247,60 @@ add_subdirectory(src)
 if(BUILD_SHARED_LIBS)
   add_subdirectory(tools)
 
-  if(BUILD_TEST)
-    add_subdirectory(test)
-  endif()
-
   if (BUILD_SAMPLE)
     add_subdirectory(sample)
   endif()
 endif()
+
+if(BUILD_TEST)
+  add_subdirectory(test)
+endif()
+
+if(BUILD_SHARED_LIBS)
+  set(rime_export_targets rime)
+else()
+  set(rime_export_targets rime-static)
+endif()
+if(BUILD_SHARED_LIBS AND BUILD_SEPARATE_LIBS)
+  list(APPEND rime_export_targets rime-dict rime-gears rime-levers)
+endif()
+
+if(USE_VENDORED_DEPS)
+  install(TARGETS ${rime_export_targets}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+else()
+  install(TARGETS ${rime_export_targets}
+    EXPORT rime-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+  install(EXPORT rime-targets
+    NAMESPACE rime::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rime
+  )
+endif()
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/RimeConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RimeConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/RimeConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rime
+)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/RimeConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/RimeConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/rime
+)

@@ -1,13 +1,16 @@
 project(rime-sample)
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 set(SAMPLE_VERSION 1.0.0)
 set(SAMPLE_SOVERSION 1)
 
-aux_source_directory(src sample_src)
+set(sample_src
+  src/sample_module.cc
+  src/trivial_translator.cc
+)
 
 set(sample_library rime-sample)
-set(sample_deps ${rime_library})
+set(sample_deps rime::rime)
 set(sample_modules "sample")
 
 if(BUILD_SAMPLE)
@@ -16,7 +19,7 @@ if(BUILD_SAMPLE)
 
   message(STATUS "${sample_library} provides modules: ${sample_modules}")
   add_library(${sample_library} ${sample_src})
-  target_link_libraries(${sample_library} ${sample_deps})
+  target_link_libraries(${sample_library} PRIVATE ${sample_deps})
   set_target_properties(${sample_library}
     PROPERTIES
     VERSION ${SAMPLE_VERSION}
@@ -40,6 +43,7 @@ else()
       PROPERTIES
       POSITION_INDEPENDENT_CODE ON)
   endif()
+  target_link_libraries(rime-sample-objs PRIVATE rime::rime)
 
   set(plugin_name ${sample_library} PARENT_SCOPE)
   set(plugin_objs $<TARGET_OBJECTS:rime-sample-objs> PARENT_SCOPE)

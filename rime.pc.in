@@ -7,6 +7,6 @@ pluginsdir=@pluginsdir@
 
 Name: Rime
 Description: Rime Input Method Engine
-Version: @rime_version@
+Version: @PROJECT_VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lrime

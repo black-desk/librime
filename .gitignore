@@ -1,5 +1,4 @@
 build/
-build-static/
 debug/
 dist/
 data/*

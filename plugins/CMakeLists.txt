@@ -16,6 +16,11 @@ if(ENABLE_EXTERNAL_PLUGINS)
       PROPERTIES
       POSITION_INDEPENDENT_CODE ON)
   endif()
+  target_include_directories(rime-plugins-objs PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_BINARY_DIR}/src)
+  target_link_libraries(rime-plugins-objs PRIVATE Boost::regex glog::glog)
 
   set(plugins_objs ${plugins_objs} $<TARGET_OBJECTS:rime-plugins-objs>)
   set(plugins_modules ${plugins_modules} "plugins")
@@ -53,7 +58,7 @@ foreach(plugin ${plugins})
   else()
     message(STATUS "Plugin ${plugin_name} provides modules: ${plugin_modules}")
     add_library(${plugin_name} ${rime_plugin_boilerplate_src} ${plugin_objs})
-    target_link_libraries(${plugin_name} ${plugin_deps})
+    target_link_libraries(${plugin_name} PRIVATE ${plugin_deps} rime::rime)
     set_target_properties(${plugin_name}
       PROPERTIES
       LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/${RIME_PLUGINS_DIR}
