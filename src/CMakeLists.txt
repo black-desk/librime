@@ -80,6 +80,9 @@ if(Boost_FOUND)
   endif()
   if(TARGET Boost::headers)
     list(APPEND rime_core_deps Boost::headers)
+  elseif(Boost_INCLUDE_DIRS)
+    # Boost installed without CMake config files - add include dirs manually
+    include_directories(${Boost_INCLUDE_DIRS})
   endif()
 endif()
 

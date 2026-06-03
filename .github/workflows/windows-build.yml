@@ -68,6 +68,14 @@ jobs:
       - name: Install boost
         run: .\install-boost.bat
 
+      - name: Diagnose Boost CMake config
+        run: |
+          Write-Host "=== Boost root: $env:BOOST_ROOT ==="
+          Get-ChildItem -Path "$env:BOOST_ROOT" -Recurse -Filter "*Config.cmake" | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem -Path "$env:BOOST_ROOT" -Recurse -Filter "*-config.cmake" | ForEach-Object { Write-Host $_.FullName }
+          Write-Host "=== boost/version.hpp ==="
+          Get-Content "$env:BOOST_ROOT\boost\version.hpp" | Select-String "BOOST_LIB_VERSION"
+
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v4

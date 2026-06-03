@@ -49,6 +49,9 @@ include_directories(
 )
 if(Boost_FOUND)
   add_compile_definitions(BOOST_DLL_USE_STD_FS)
+  if(NOT TARGET Boost::headers AND Boost_INCLUDE_DIRS)
+    include_directories(${Boost_INCLUDE_DIRS})
+  endif()
 endif()
 
 foreach(plugin ${plugins})
