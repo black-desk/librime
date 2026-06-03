@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(rime_version 1.16.1)
 set(rime_soversion 1)
 
-add_definitions(-DRIME_VERSION="${rime_version}")
+add_compile_definitions(RIME_VERSION="${rime_version}")
 
 # generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -70,7 +70,7 @@ endif()
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
-  add_definitions(-DBOOST_DLL_USE_STD_FS)
+  add_compile_definitions(BOOST_DLL_USE_STD_FS)
 endif()
 
 if(ENABLE_LOGGING)
@@ -108,11 +108,11 @@ endif()
 find_package(Threads)
 
 if(NOT ENABLE_THREADING)
-  add_definitions(-DRIME_NO_THREADING)
+  add_compile_definitions(RIME_NO_THREADING)
 endif()
 
 if(NOT ENABLE_TIMESTAMP)
-  add_definitions(-DRIME_NO_TIMESTAMP)
+  add_compile_definitions(RIME_NO_TIMESTAMP)
 endif()
 
 if(BUILD_TEST)
@@ -128,7 +128,7 @@ if(YamlCpp_FOUND)
   include_directories(${YamlCpp_INCLUDE_PATH})
 endif()
 if(YamlCpp_STATIC)
-  add_definitions(-DYAML_CPP_STATIC_DEFINE)
+  add_compile_definitions(YAML_CPP_STATIC_DEFINE)
 endif()
 
 find_package(LevelDb REQUIRED)
@@ -146,7 +146,7 @@ if(Opencc_FOUND)
 include_directories(${Opencc_INCLUDE_PATH})
 endif()
 if(Opencc_STATIC)
-  add_definitions(-DOpencc_BUILT_AS_STATIC)
+  add_compile_definitions(Opencc_BUILT_AS_STATIC)
 endif()
 
 find_path(X11Keysym X11/keysym.h)
@@ -170,7 +170,7 @@ if(MSVC)
   # https://stackoverflow.com/a/31264946
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-  add_definitions("/wd4244 /wd4996")
+  add_compile_options(/wd4244 /wd4996)
 
   # large address aware
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
@@ -246,7 +246,7 @@ if(BUILD_DATA)
 endif()
 
 if(BUILD_SHARED_LIBS)
-  add_definitions(-DRIME_BUILD_SHARED_LIBS)
+  add_compile_definitions(RIME_BUILD_SHARED_LIBS)
   set(rime_library rime)
   if(BUILD_SEPARATE_LIBS)
     set(rime_dict_library rime-dict)
