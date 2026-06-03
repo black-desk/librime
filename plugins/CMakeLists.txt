@@ -47,6 +47,9 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_BINARY_DIR}/src
 )
+if(Boost_FOUND)
+  add_compile_definitions(BOOST_DLL_USE_STD_FS)
+endif()
 
 foreach(plugin ${plugins})
   unset(plugin_name)

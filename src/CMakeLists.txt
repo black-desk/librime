@@ -35,36 +35,76 @@ else()
       ${rime_plugins_objs})
 endif()
 
+# Helper: resolve a dependency to its imported target or fallback variable
+function(rime_dep result target_name fallback_var)
+  if(TARGET ${target_name})
+    set(${result} ${target_name} PARENT_SCOPE)
+  elseif(${fallback_var})
+    set(${result} ${${fallback_var}} PARENT_SCOPE)
+  endif()
+endfunction()
+
 set(rime_optional_deps "")
 if(Gflags_FOUND)
-  list(APPEND rime_optional_deps gflags::gflags)
+  if(TARGET gflags::gflags)
+    list(APPEND rime_optional_deps gflags::gflags)
+  elseif(Gflags_LIBRARY)
+    list(APPEND rime_optional_deps ${Gflags_LIBRARY})
+  endif()
 endif()
 if(ENABLE_EXTERNAL_PLUGINS)
   list(APPEND rime_optional_deps $<LINK_ONLY:dl>)
 endif()
 
 set(rime_core_deps
-    glog::glog
-    yaml-cpp::yaml-cpp
     Threads::Threads
     ${rime_optional_deps})
+# glog
+if(TARGET glog::glog)
+  list(APPEND rime_core_deps glog::glog)
+elseif(Glog_LIBRARY)
+  list(APPEND rime_core_deps ${Glog_LIBRARY})
+endif()
+# yaml-cpp
+if(TARGET yaml-cpp::yaml-cpp)
+  list(APPEND rime_core_deps yaml-cpp::yaml-cpp)
+elseif(YamlCpp_LIBRARY)
+  list(APPEND rime_core_deps ${YamlCpp_LIBRARY})
+endif()
+# Boost
 if(Boost_FOUND)
   if(TARGET Boost::regex)
     list(APPEND rime_core_deps Boost::regex)
-  else()
+  elseif(Boost_LIBRARIES)
     list(APPEND rime_core_deps ${Boost_LIBRARIES})
-    include_directories(${Boost_INCLUDE_DIRS})
   endif()
   if(TARGET Boost::headers)
     list(APPEND rime_core_deps Boost::headers)
   endif()
 endif()
-set(rime_dict_deps
-    leveldb::leveldb
-    marisa::marisa)
+
+set(rime_dict_deps "")
+# leveldb
+if(TARGET leveldb::leveldb)
+  list(APPEND rime_dict_deps leveldb::leveldb)
+elseif(LevelDb_LIBRARY)
+  list(APPEND rime_dict_deps ${LevelDb_LIBRARY})
+endif()
+# marisa
+if(TARGET marisa::marisa)
+  list(APPEND rime_dict_deps marisa::marisa)
+elseif(Marisa_LIBRARY)
+  list(APPEND rime_dict_deps ${Marisa_LIBRARY})
+endif()
+
 set(rime_gears_deps
-    ${ICU_LIBRARIES}
-    Opencc::Opencc)
+    ${ICU_LIBRARIES})
+# Opencc
+if(TARGET Opencc::Opencc)
+  list(APPEND rime_gears_deps Opencc::Opencc)
+elseif(Opencc_LIBRARY)
+  list(APPEND rime_gears_deps ${Opencc_LIBRARY})
+endif()
 if(Iconv_FOUND)
   list(APPEND rime_gears_deps Iconv::Iconv)
 endif()
