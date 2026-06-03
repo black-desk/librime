@@ -1,5 +1,5 @@
 project(rime-sample)
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
 
 set(SAMPLE_VERSION 1.0.0)
 set(SAMPLE_SOVERSION 1)
