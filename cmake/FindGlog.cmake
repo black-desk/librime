@@ -24,3 +24,10 @@ else(Glog_FOUND)
 endif(Glog_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_glog_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(Glog_FOUND AND NOT TARGET glog::glog)
+  add_library(glog::glog UNKNOWN IMPORTED)
+  set_target_properties(glog::glog PROPERTIES
+    IMPORTED_LOCATION "${Glog_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${Glog_INCLUDE_PATH}")
+endif()

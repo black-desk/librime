@@ -24,3 +24,10 @@ else(Gflags_FOUND)
 endif(Gflags_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_gflags_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(Gflags_FOUND AND NOT TARGET gflags::gflags)
+  add_library(gflags::gflags UNKNOWN IMPORTED)
+  set_target_properties(gflags::gflags PROPERTIES
+    IMPORTED_LOCATION "${Gflags_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${Gflags_INCLUDE_PATH}")
+endif()

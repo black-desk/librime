@@ -24,3 +24,10 @@ else(Marisa_FOUND)
 endif(Marisa_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_marisa_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(Marisa_FOUND AND NOT TARGET marisa::marisa)
+  add_library(marisa::marisa UNKNOWN IMPORTED)
+  set_target_properties(marisa::marisa PROPERTIES
+    IMPORTED_LOCATION "${Marisa_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${Marisa_INCLUDE_PATH}")
+endif()

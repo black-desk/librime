@@ -30,3 +30,10 @@ else(YamlCpp_FOUND)
 endif(YamlCpp_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_yamlcpp_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(YamlCpp_FOUND AND NOT TARGET yaml-cpp::yaml-cpp)
+  add_library(yaml-cpp::yaml-cpp UNKNOWN IMPORTED)
+  set_target_properties(yaml-cpp::yaml-cpp PROPERTIES
+    IMPORTED_LOCATION "${YamlCpp_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${YamlCpp_INCLUDE_PATH}")
+endif()

@@ -39,6 +39,7 @@ endif(WIN32)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}")
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 
 if (ENABLE_ASAN)
   add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
@@ -116,7 +117,6 @@ if(BUILD_TEST)
   find_package(GTest REQUIRED)
   if(GTEST_FOUND)
     enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
   endif()
 endif()
 

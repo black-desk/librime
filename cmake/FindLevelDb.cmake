@@ -24,3 +24,10 @@ else(LevelDb_FOUND)
 endif(LevelDb_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_leveldb_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(LevelDb_FOUND AND NOT TARGET leveldb::leveldb)
+  add_library(leveldb::leveldb UNKNOWN IMPORTED)
+  set_target_properties(leveldb::leveldb PROPERTIES
+    IMPORTED_LOCATION "${LevelDb_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${LevelDb_INCLUDE_PATH}")
+endif()

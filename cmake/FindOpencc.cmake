@@ -24,3 +24,10 @@ else(Opencc_FOUND)
 endif(Opencc_FOUND)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_opencc_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if(Opencc_FOUND AND NOT TARGET Opencc::Opencc)
+  add_library(Opencc::Opencc UNKNOWN IMPORTED)
+  set_target_properties(Opencc::Opencc PROPERTIES
+    IMPORTED_LOCATION "${Opencc_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${Opencc_INCLUDE_PATH}")
+endif()
