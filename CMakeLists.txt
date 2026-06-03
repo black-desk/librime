@@ -41,12 +41,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}")
 
 if (ENABLE_ASAN)
-  set(asan_cflags "-fsanitize=address -fno-omit-frame-pointer")
-  set(asan_lflags "-fsanitize=address -lasan")
-  set(CMAKE_C_FLAGS "${asan_cflags} ${CMAKE_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${asan_cflags} ${CMAKE_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${asan_lflags} ${CMAKE_EXE_LINKER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${asan_lflags} ${CMAKE_SHARED_LINKER_FLAGS}")
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address)
+  link_libraries(asan)
 endif()
 
 set(Boost_USE_STATIC_LIBS ${BUILD_STATIC})
@@ -168,13 +165,12 @@ link_directories(${PROJECT_SOURCE_DIR}/lib)
 
 if(MSVC)
   # https://stackoverflow.com/a/31264946
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+  add_compile_options($<$<CONFIG:Release>:/Zi>)
+  add_link_options($<$<CONFIG:Release>:/DEBUG> $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
   add_compile_options(/wd4244 /wd4996)
 
   # large address aware
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
+  add_link_options(/LARGEADDRESSAWARE)
 endif()
 
 if (NOT CMAKE_BUILD_PARALLEL_LEVEL)
