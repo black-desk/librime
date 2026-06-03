@@ -8,8 +8,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(rime_version 1.16.1)
 set(rime_soversion 1)
 
-add_compile_definitions(RIME_VERSION="${rime_version}")
-
 # generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -66,7 +64,6 @@ else()
   find_package(Boost 1.77.0)
 endif()
 if(Boost_FOUND)
-  add_compile_definitions(BOOST_DLL_USE_STD_FS)
 endif()
 
 if(ENABLE_LOGGING)
@@ -82,21 +79,6 @@ if(ENABLE_LOGGING)
   endif()
 
   find_package(Glog REQUIRED)
-  if(Glog_FOUND)
-    if(WIN32)
-      add_compile_definitions("GLOG_DEPRECATED=__declspec(deprecated)")
-      add_compile_definitions(GLOG_NO_ABBREVIATED_SEVERITIES)
-    else()
-      add_compile_definitions("GLOG_DEPRECATED=__attribute__((deprecated))")
-    endif()
-    if(Glog_STATIC)
-      add_compile_definitions(GLOG_EXPORT=)
-      add_compile_definitions(GLOG_NO_EXPORT=)
-    else()
-      add_compile_definitions("GLOG_EXPORT=__attribute__((visibility(\"default\")))")
-      add_compile_definitions("GLOG_NO_EXPORT=__attribute__((visibility(\"default\")))")
-    endif()
-  endif()
 
   set(RIME_ENABLE_LOGGING 1)
 
@@ -108,25 +90,14 @@ endif()
 find_package(Threads)
 find_package(Iconv)
 
-if(NOT ENABLE_THREADING)
-  add_compile_definitions(RIME_NO_THREADING)
-endif()
-
-if(NOT ENABLE_TIMESTAMP)
-  add_compile_definitions(RIME_NO_TIMESTAMP)
-endif()
-
 if(BUILD_TEST)
   find_package(GTest REQUIRED)
-  if(GTEST_FOUND)
+  if(GTest_FOUND)
     enable_testing()
   endif()
 endif()
 
 find_package(YamlCpp REQUIRED)
-if(YamlCpp_STATIC)
-  add_compile_definitions(YAML_CPP_STATIC_DEFINE)
-endif()
 
 find_package(LevelDb REQUIRED)
 
@@ -138,9 +109,6 @@ if(Opencc_FOUND AND NOT TARGET Opencc::Opencc)
   if(TARGET OpenCC::OpenCC)
     add_library(Opencc::Opencc ALIAS OpenCC::OpenCC)
   endif()
-endif()
-if(Opencc_STATIC)
-  add_compile_definitions(Opencc_BUILT_AS_STATIC)
 endif()
 
 find_path(X11Keysym X11/keysym.h)
@@ -233,7 +201,6 @@ if(BUILD_DATA)
 endif()
 
 if(BUILD_SHARED_LIBS)
-  add_compile_definitions(RIME_BUILD_SHARED_LIBS)
   set(rime_library rime)
   if(BUILD_SEPARATE_LIBS)
     set(rime_dict_library rime-dict)

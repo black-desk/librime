@@ -98,6 +98,44 @@ if(BUILD_SHARED_LIBS)
     target_include_directories(rime PRIVATE ${X11Keysym})
   endif()
   target_link_libraries(rime ${rime_deps})
+  target_compile_definitions(rime
+    PUBLIC
+      RIME_BUILD_SHARED_LIBS
+    PRIVATE
+      RIME_VERSION="${rime_version}"
+  )
+  if(Boost_FOUND)
+    target_compile_definitions(rime PRIVATE BOOST_DLL_USE_STD_FS)
+  endif()
+  if(NOT ENABLE_THREADING)
+    target_compile_definitions(rime PRIVATE RIME_NO_THREADING)
+  endif()
+  if(NOT ENABLE_TIMESTAMP)
+    target_compile_definitions(rime PRIVATE RIME_NO_TIMESTAMP)
+  endif()
+  if(YamlCpp_STATIC)
+    target_compile_definitions(rime PRIVATE YAML_CPP_STATIC_DEFINE)
+  endif()
+  if(Opencc_STATIC)
+    target_compile_definitions(rime PRIVATE Opencc_BUILT_AS_STATIC)
+  endif()
+  if(Glog_FOUND)
+    if(WIN32)
+      target_compile_definitions(rime PRIVATE
+        "GLOG_DEPRECATED=__declspec(deprecated)"
+        GLOG_NO_ABBREVIATED_SEVERITIES)
+    else()
+      target_compile_definitions(rime PRIVATE
+        "GLOG_DEPRECATED=__attribute__((deprecated))")
+    endif()
+    if(Glog_STATIC)
+      target_compile_definitions(rime PRIVATE GLOG_EXPORT= GLOG_NO_EXPORT=)
+    else()
+      target_compile_definitions(rime PRIVATE
+        "GLOG_EXPORT=__attribute__((visibility(\"default\")))"
+        "GLOG_NO_EXPORT=__attribute__((visibility(\"default\")))")
+    endif()
+  endif()
   set_target_properties(rime PROPERTIES
     DEFINE_SYMBOL "RIME_EXPORTS"
     VERSION ${rime_version}
@@ -193,6 +231,42 @@ else()
     target_include_directories(rime-static PRIVATE ${X11Keysym})
   endif()
   target_link_libraries(rime-static ${rime_deps})
+  target_compile_definitions(rime-static
+    PUBLIC
+      RIME_VERSION="${rime_version}"
+  )
+  if(Boost_FOUND)
+    target_compile_definitions(rime-static PRIVATE BOOST_DLL_USE_STD_FS)
+  endif()
+  if(NOT ENABLE_THREADING)
+    target_compile_definitions(rime-static PRIVATE RIME_NO_THREADING)
+  endif()
+  if(NOT ENABLE_TIMESTAMP)
+    target_compile_definitions(rime-static PRIVATE RIME_NO_TIMESTAMP)
+  endif()
+  if(YamlCpp_STATIC)
+    target_compile_definitions(rime-static PRIVATE YAML_CPP_STATIC_DEFINE)
+  endif()
+  if(Opencc_STATIC)
+    target_compile_definitions(rime-static PRIVATE Opencc_BUILT_AS_STATIC)
+  endif()
+  if(Glog_FOUND)
+    if(WIN32)
+      target_compile_definitions(rime-static PRIVATE
+        "GLOG_DEPRECATED=__declspec(deprecated)"
+        GLOG_NO_ABBREVIATED_SEVERITIES)
+    else()
+      target_compile_definitions(rime-static PRIVATE
+        "GLOG_DEPRECATED=__attribute__((deprecated))")
+    endif()
+    if(Glog_STATIC)
+      target_compile_definitions(rime-static PRIVATE GLOG_EXPORT= GLOG_NO_EXPORT=)
+    else()
+      target_compile_definitions(rime-static PRIVATE
+        "GLOG_EXPORT=__attribute__((visibility(\"default\")))"
+        "GLOG_NO_EXPORT=__attribute__((visibility(\"default\")))")
+    endif()
+  endif()
   set_target_properties(rime-static PROPERTIES
     OUTPUT_NAME "rime" PREFIX "lib"
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
