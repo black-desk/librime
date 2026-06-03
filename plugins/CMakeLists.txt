@@ -39,6 +39,15 @@ else()
   endforeach(file)
 endif()
 
+# Plugins need rime include dirs for compilation.
+# Use directory-scope include_directories which propagates to all
+# subdirectories (plugin add_subdirectory calls) and their OBJECT libraries.
+include_directories(
+  ${PROJECT_SOURCE_DIR}/src
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_BINARY_DIR}/src
+)
+
 foreach(plugin ${plugins})
   unset(plugin_name)
   unset(plugin_objs)

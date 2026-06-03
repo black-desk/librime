@@ -44,12 +44,21 @@ if(ENABLE_EXTERNAL_PLUGINS)
 endif()
 
 set(rime_core_deps
-    Boost::regex
-    Boost::headers
     glog::glog
     yaml-cpp::yaml-cpp
     Threads::Threads
     ${rime_optional_deps})
+if(Boost_FOUND)
+  if(TARGET Boost::regex)
+    list(APPEND rime_core_deps Boost::regex)
+  else()
+    list(APPEND rime_core_deps ${Boost_LIBRARIES})
+    include_directories(${Boost_INCLUDE_DIRS})
+  endif()
+  if(TARGET Boost::headers)
+    list(APPEND rime_core_deps Boost::headers)
+  endif()
+endif()
 set(rime_dict_deps
     leveldb::leveldb
     marisa::marisa)
