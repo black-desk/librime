@@ -37,36 +37,39 @@ endif()
 
 set(rime_optional_deps "")
 if(Gflags_FOUND)
-  set(rime_optional_deps ${rime_optional_deps} ${Gflags_LIBRARY})
+  list(APPEND rime_optional_deps gflags::gflags)
 endif()
 if(ENABLE_EXTERNAL_PLUGINS)
-  set(rime_optional_deps ${rime_optional_deps} dl)
+  list(APPEND rime_optional_deps $<LINK_ONLY:dl>)
 endif()
 
 set(rime_core_deps
-    ${Boost_LIBRARIES}
-    ${Glog_LIBRARY}
-    ${YamlCpp_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
+    Boost::regex
+    Boost::headers
+    glog::glog
+    yaml-cpp::yaml-cpp
+    Threads::Threads
     ${rime_optional_deps})
 set(rime_dict_deps
-    ${LevelDb_LIBRARY}
-    ${Marisa_LIBRARY})
+    leveldb::leveldb
+    marisa::marisa)
 set(rime_gears_deps
-    ${ICONV_LIBRARIES}
     ${ICU_LIBRARIES}
-    ${Opencc_LIBRARY})
+    Opencc::Opencc)
+if(Iconv_FOUND)
+  list(APPEND rime_gears_deps Iconv::Iconv)
+endif()
 set(rime_levers_deps "")
 
 if(Glog_FOUND AND WIN32)
   # TODO: in glog v0.7.0, someone at Google forget to add dbghelp.lib to the linker library list.
-  set(rime_core_deps ${rime_core_deps} dbghelp)
+  list(APPEND rime_core_deps dbghelp)
 endif()
 
 if(MINGW)
   # fix: bcrypt for boost uuid issue
   # https://github.com/boostorg/uuid/issues/68
-  set(rime_core_deps ${rime_core_deps} wsock32 ws2_32 bcrypt)
+  list(APPEND rime_core_deps wsock32 ws2_32 bcrypt)
 endif()
 
 if(BUILD_SEPARATE_LIBS)
@@ -82,6 +85,18 @@ endif()
 
 if(BUILD_SHARED_LIBS)
   add_library(rime ${rime_src})
+  target_include_directories(rime
+    PUBLIC
+      ${PROJECT_SOURCE_DIR}/src
+      ${PROJECT_SOURCE_DIR}/include
+      ${PROJECT_BINARY_DIR}/src
+  )
+  target_link_directories(rime
+    PRIVATE ${PROJECT_SOURCE_DIR}/lib
+  )
+  if(X11Keysym)
+    target_include_directories(rime PRIVATE ${X11Keysym})
+  endif()
   target_link_libraries(rime ${rime_deps})
   set_target_properties(rime PROPERTIES
     DEFINE_SYMBOL "RIME_EXPORTS"
@@ -165,6 +180,18 @@ if(BUILD_SHARED_LIBS)
   endif()
 else()
   add_library(rime-static STATIC ${rime_src})
+  target_include_directories(rime-static
+    PUBLIC
+      ${PROJECT_SOURCE_DIR}/src
+      ${PROJECT_SOURCE_DIR}/include
+      ${PROJECT_BINARY_DIR}/src
+  )
+  target_link_directories(rime-static
+    PRIVATE ${PROJECT_SOURCE_DIR}/lib
+  )
+  if(X11Keysym)
+    target_include_directories(rime-static PRIVATE ${X11Keysym})
+  endif()
   target_link_libraries(rime-static ${rime_deps})
   set_target_properties(rime-static PROPERTIES
     OUTPUT_NAME "rime" PREFIX "lib"
