@@ -91,6 +91,25 @@ set(Boost_INCLUDE_DIRS "")
 set(Boost_LIBRARY_DIRS "")
 ]=])
   endif()
+  if(gtest IN_LIST LIBRIME_FETCHCONTENT)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK OFF CACHE INTERNAL "")
+    FetchContent_Declare(
+      GTest
+      URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz
+      URL_HASH SHA256=65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      OVERRIDE_FIND_PACKAGE
+    )
+    # Provide compatibility variables that find_package(GTest) normally sets
+    file(WRITE ${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}/gtest-extra.cmake
+[=[
+if(NOT GTEST_LIBRARIES)
+  set(GTEST_LIBRARIES GTest::gtest GTest::gtest_main)
+endif()
+set(GTEST_INCLUDE_DIRS "")
+]=])
+  endif()
 endif()
 
 if(MSVC)
@@ -152,10 +171,8 @@ endif()
 
 if(BUILD_TEST)
   find_package(GTest REQUIRED)
-  if(GTEST_FOUND)
-    enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
-  endif()
+  enable_testing()
+  include_directories(${GTEST_INCLUDE_DIRS})
 endif()
 
 find_package(YamlCpp REQUIRED)
