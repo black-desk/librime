@@ -55,7 +55,7 @@ set(Glog_STATIC ${BUILD_STATIC})
 set(LevelDb_STATIC ${BUILD_STATIC})
 set(Marisa_STATIC ${BUILD_STATIC})
 set(Opencc_STATIC ${BUILD_STATIC})
-set(YamlCpp_STATIC ${BUILD_STATIC})
+set(YAML_CPP_STATIC ${BUILD_STATIC})
 
 set(Boost_USE_MULTITHREADED ON)
 
@@ -109,6 +109,18 @@ if(NOT GTEST_LIBRARIES)
 endif()
 set(GTEST_INCLUDE_DIRS "")
 ]=])
+  endif()
+  if(yaml-cpp IN_LIST LIBRIME_FETCHCONTENT)
+    set(YAML_CPP_BUILD_TESTS OFF CACHE INTERNAL "")
+    set(YAML_CPP_BUILD_TOOLS OFF CACHE INTERNAL "")
+    set(YAML_CPP_INSTALL OFF CACHE INTERNAL "")
+    FetchContent_Declare(
+      yaml-cpp
+      URL https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+      URL_HASH SHA256=25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      OVERRIDE_FIND_PACKAGE
+    )
   endif()
 endif()
 
@@ -175,11 +187,8 @@ if(BUILD_TEST)
   include_directories(${GTEST_INCLUDE_DIRS})
 endif()
 
-find_package(YamlCpp REQUIRED)
-if(YamlCpp_FOUND)
-  include_directories(${YamlCpp_INCLUDE_PATH})
-endif()
-if(YamlCpp_STATIC)
+find_package(yaml-cpp REQUIRED)
+if(YAML_CPP_STATIC)
   add_definitions(-DYAML_CPP_STATIC_DEFINE)
 endif()
 
