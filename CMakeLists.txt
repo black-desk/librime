@@ -1,7 +1,7 @@
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.24)
 project(rime)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -58,6 +58,41 @@ set(Opencc_STATIC ${BUILD_STATIC})
 set(YamlCpp_STATIC ${BUILD_STATIC})
 
 set(Boost_USE_MULTITHREADED ON)
+
+set(LIBRIME_FETCHCONTENT "" CACHE STRING
+  "Dependencies to fetch via FetchContent instead of find_package (semicolon-separated: boost;yaml-cpp;...)")
+
+if(LIBRIME_FETCHCONTENT)
+  include(FetchContent)
+  if(boost IN_LIST LIBRIME_FETCHCONTENT)
+    set(BOOST_INCLUDE_LIBRARIES
+      algorithm crc interprocess preprocessor range regex scope_exit
+      signals2 unordered uuid vmd
+    )
+    set(BUILD_TESTING OFF CACHE INTERNAL "")
+    FetchContent_Declare(
+      Boost
+      URL https://github.com/boostorg/boost/releases/download/boost-1.89.0/boost-1.89.0-cmake.tar.xz
+      URL_HASH SHA256=67acec02d0d118b5de9eb441f5fb707b3a1cdd884be00ca24b9a73c995511f74
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      OVERRIDE_FIND_PACKAGE
+    )
+    # Provide compatibility variables that find_package(Boost) normally sets
+    file(WRITE ${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}/boost-extra.cmake
+[=[
+if(NOT Boost_LIBRARIES)
+  set(Boost_LIBRARIES
+    Boost::algorithm Boost::crc Boost::interprocess Boost::preprocessor
+    Boost::range Boost::regex Boost::scope_exit Boost::signals2
+    Boost::unordered Boost::uuid Boost::vmd
+  )
+endif()
+set(Boost_INCLUDE_DIRS "")
+set(Boost_LIBRARY_DIRS "")
+]=])
+  endif()
+endif()
+
 if(MSVC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
