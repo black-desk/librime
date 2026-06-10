@@ -122,6 +122,16 @@ set(GTEST_INCLUDE_DIRS "")
       OVERRIDE_FIND_PACKAGE
     )
   endif()
+  if(gflags IN_LIST LIBRIME_FETCHCONTENT)
+    set(BUILD_TESTING OFF CACHE INTERNAL "")
+    FetchContent_Declare(
+      gflags
+      URL https://github.com/gflags/gflags/archive/refs/tags/v2.3.0.tar.gz
+      URL_HASH SHA256=f619a51371f41c0ad6837b2a98af9d4643b3371015d873887f7e8d3237320b2f
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      OVERRIDE_FIND_PACKAGE
+    )
+  endif()
 endif()
 
 if(MSVC)
@@ -141,9 +151,9 @@ endif()
 
 if(ENABLE_LOGGING)
 
-  find_package(Gflags)
-  if(Gflags_FOUND)
-    include_directories(${Gflags_INCLUDE_PATH})
+  find_package(gflags)
+  if(gflags_FOUND)
+    include_directories(${GFLAGS_INCLUDE_DIR})
   endif()
 
   find_package(Glog REQUIRED)
